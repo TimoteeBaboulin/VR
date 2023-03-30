@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.XR.Interaction.Toolkit;
 
 public enum HandSide{
@@ -11,30 +12,45 @@ public class Player : MonoBehaviour{
     [SerializeField] private XRRayInteractor[] _rayInteractors;
     [SerializeField] private IUseable[] _useables = new IUseable[2];
 
+    [SerializeField] private float _shotTriggerValue = 0.8f;
+    [SerializeField] private float _triggerResetValue = 0.5f;
+    
+    private bool[] _hasShot = new bool[2];
+
     private void Awake(){
         foreach (var interactor in _rayInteractors){
             interactor.maxRaycastDistance = 100;
         }
     }
 
-    public void OnLeftHandActivate(){
+    public void OnLeftHandActivate(InputAction.CallbackContext context){
+        float value = context.ReadValue<float>();
         var hand = (int)HandSide.Left;
         var weapon = _useables[hand];
         
         if (weapon == null)
             RayForFollowHand(hand);
-        else
-            weapon.Use();
+        else{
+            if (!_hasShot[hand] && value > _shotTriggerValue)
+                weapon.Use();
+            else if (_hasShot[hand] && value < _triggerResetValue)
+                _hasShot[hand] = false;
+        }
     }
 
-    public void OnRightHandActivate(){
+    public void OnRightHandActivate(InputAction.CallbackContext context){
+        float value = context.ReadValue<float>();
         var hand = (int)HandSide.Right;
         var weapon = _useables[hand];
         
         if (weapon == null)
             RayForFollowHand(hand);
-        else
-            weapon.Use();
+        else{
+            if (!_hasShot[hand] && value > _shotTriggerValue)
+                weapon.Use();
+            else if (_hasShot[hand] && value < _triggerResetValue)
+                _hasShot[hand] = false;
+        }
     }
 
     private void RayForFollowHand(int index){
